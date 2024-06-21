@@ -1,4 +1,4 @@
-const { By, Key, Builder } = require("selenium-webdriver");
+const { By, Builder, until } = require("selenium-webdriver");
 const chrome = require("selenium-webdriver/chrome");
 
 async function test_case() {
@@ -13,28 +13,36 @@ async function test_case() {
     let driver = await new Builder().forBrowser("chrome").setChromeOptions(options).build();
 
     try {
-        //Send driver to website
-        await driver.get("https://testing-replica-65bc2.web.app/");
+        // Step 1: Enter the website
+        await driver.get("http://18.234.83.194/");
 
-        //Grab an element from the page
-        await driver.findElement(By.id("lastname")).click()
-        // 4 | type | id=lastname | valencia
-        await driver.findElement(By.id("lastname")).sendKeys("Pulcherio")
+        // Step 2: Wait for the element with ID 'optionsDlg' to appear (Max 10 seconds)
+        await driver.wait(until.elementLocated(By.id('optionsDlg')), 10000);
 
+        // Step 3: Find and click the 'easy' radio input
+        await driver.findElement(By.css("label > input[type='radio'][name='difficulty'][id='r0']")).click();
 
-        //Check the result
+        // Step 4: Find and click the 'x (go first)' radio input
+        await driver.findElement(By.css("label > input[type='radio'][name='player'][id='rx']")).click();
 
-        // Wait for the members to be added and get the member names from the table
-        let memberOptions = await driver.wait(until.elementsLocated(By.xpath("//select[@id='members']//option")), 20000);
-        let memberNames = [];
-        for (let option of memberOptions) {
-            memberNames.push(await option.getText());
+        // Step 5: Find and click the 'Play' button
+        await driver.findElement(By.id('okBtn')).click();
+
+        // Step 6: Find and click the element with ID 'cell0'
+        let cell0 = await driver.findElement(By.id('cell0'));
+        await cell0.click();
+
+        // Step 7: Get the value of innerHTML text of the element found in step 6
+        let cell0InnerHtml = await cell0.getAttribute('innerHTML');
+
+        // Analyze the result:
+        // Check if the value obtained is different than 'x'
+        if (cell0InnerHtml !== 'x') {
+            throw new Error(`Test failed: Expected 'x' but got '${cell0InnerHtml}'`);
+        } else {
+            console.log('Test passed!');
         }
 
-        // Check if the member names contain the exact name you entered
-        assert(memberNames.includes("Pulcherio Mickaela"), "Test Succeed");
-
-        console.log('Test Failed');
     } catch (error) {
         console.log('An error accurred:', error);
     } finally {
