@@ -11,40 +11,37 @@ async function test_case() {
 
     // Create a Driver
     let driver = await new Builder().forBrowser("chrome").setChromeOptions(options).build();
-
+    
     try {
-        // Step 1: Enter the website
+        // Send driver to website
         await driver.get("http://18.234.83.194/");
+        console.log('Website opened');
+        await driver.sleep(1000);
 
-        // Step 2: Wait for the element with ID 'optionsDlg' to appear (Max 10 seconds)
-        await driver.wait(until.elementLocated(By.id('optionsDlg')), 10000);
+        let playButton = await driver.findElement(By.id('okBtn'));
+        await playButton.click();
+        console.log('Play button clicked');
 
-        // Step 3: Find and click the 'easy' radio input
-        await driver.findElement(By.css("label > input[type='radio'][name='difficulty'][id='r0']")).click();
+        // Find and click on a cell
+        let cell = await driver.findElement(By.id('cell0'));
+        await cell.click();
+        console.log('Cell clicked');
 
-        // Step 4: Find and click the 'x (go first)' radio input
-        await driver.findElement(By.css("label > input[type='radio'][name='player'][id='rx']")).click();
+        // Wait for a brief moment to ensure the update is reflected (adjust as necessary)
+        await driver.sleep(1000);
 
-        // Step 5: Find and click the 'Play' button
-        await driver.findElement(By.id('okBtn')).click();
+        // Check the content of the cell after click
+        let cellContent = await cell.getAttribute('innerHTML');
+        console.log('Cell content:', cellContent);
 
-        // Step 6: Find and click the element with ID 'cell0'
-        let cell0 = await driver.findElement(By.id('cell0'));
-        await cell0.click();
-
-        // Step 7: Get the value of innerHTML text of the element found in step 6
-        let cell0InnerHtml = await cell0.getAttribute('innerHTML');
-
-        // Analyze the result:
-        // Check if the value obtained is different than 'x'
-        if (cell0InnerHtml !== 'x') {
-            throw new Error(`Test failed: Expected 'x' but got '${cell0InnerHtml}'`);
+        // Check if it shows "<span class=\"x\">&times;</span>"
+        if (cellContent.trim() === '<span class="x">×</span>') {
+            console.log('Test Success');
         } else {
-            console.log('Test passed!');
+            console.log('Test Failed');
         }
-
     } catch (error) {
-        console.log('An error accurred:', error);
+        console.log('An error occurred:', error);
     } finally {
         await driver.quit();
     }

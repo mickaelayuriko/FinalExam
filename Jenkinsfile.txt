@@ -8,40 +8,47 @@ TEST_RESULT_FILE = 'test_result.txt'
     stages{
         stage('Deploy to Testing'){
             steps{
-            sh 'ssh -T -oStrictHostKeyChecking=no -i "$TOKENAWS" ec2-user@18.234.83.194 "sudo dnf update; sudo dnf install git -y; sudo dnf install -y httpd; sudo systemctl start httpd; sudo git clone https://github.com/YOUR_REPOSITORY /var/www/html"'
-            //script{
-                    //try{
-                        //Install Selenium webdriver
-                        //sh 'npm install selenium-webdriver'
-                        
-                        //Run the test and capture the output
-                        //def output = sh(script: 'node test/test1.js', returnStdout: true).trim()
+            sh 'ssh -T -oStrictHostKeyChecking=no -i "$TOKENAWS" ec2-user@18.234.83.194 "sudo dnf update; sudo dnf install git -y; sudo dnf install -y httpd; sudo systemctl start httpd; sudo git clone https://github.com/mickaelayuriko/FinalExam.git /var/www/html"'
+            script {
+                try {
+                    sh 'npm install selenium-webdriver'
 
-                        //Debugging printing the output
-                        //echo "Test Output: ${output}"
+                    def output = sh(script: 'node tests/test.js', returnStdout: true).trim()
+                    echo "Test Output: ${output}"
 
-                        //Write the result to a file
-
-                        //if(output.contains('Test Success')){
-                        //    writeFile file: env.TEST_RESULT_FILE, text: 'true'
-                        //}else{
-                            writeFile file: env.TEST_RESULT_FILE, text: 'false'
-                        //}
-                    //}catch (Exception e) {
-                        echo "Test failed: ${e.message}"
+                    if(output.contains('Test Success')){
+                        writeFile file: env.TEST_RESULT_FILE, text: 'true'
+                    } else {
                         writeFile file: env.TEST_RESULT_FILE, text: 'false'
-                    //}
+                    }
+                } catch (Exception e) {
+                    echo "Test failed: ${e.message}"
+                    writeFile file: env.TEST_RESULT_FILE, text: 'false'
+                }
+            }
             
             }
         }
 
         stage('Deploy to Staging'){
+            when {
+               expression {
+                def testResult = readFile(env.TEST_RESULT_FILE).trim()
+                return testResult == 'true'
+                }           
+            }
             steps{
-            sh 'ssh -T -oStrictHostKeyChecking=no -i "$TOKENAWS" ec2-user@54.167.254.7 "sudo dnf update; sudo dnf install git -y; sudo dnf install -y httpd; sudo systemctl start httpd; sudo git clone https://github.com/YOUR_REPOSITORY /var/www/html"'
+            sh 'ssh -T -oStrictHostKeyChecking=no -i "$TOKENAWS" ec2-user@54.167.254.7 "sudo dnf update; sudo dnf install git -y; sudo dnf install -y httpd; sudo systemctl start httpd; sudo git clone https://github.com/mickaelayuriko/FinalExam.git /var/www/html"'
             }
         }
         
         stage('Deploy to Production_1 and Production_2'){
+            when {
+               expression {
+                def testResult = readFile(env.TEST_RESULT_FILE).trim()
+                return testResult == 'true'
+                }           
+            }
             steps{
             script {
                     def servers = [
@@ -50,7 +57,7 @@ TEST_RESULT_FILE = 'test_result.txt'
                     ]
                     for (server in servers) {
                        sh """
-                       ssh -T -oStrictHostKeyChecking=no -i "\$TOKENAWS" ec2-user@${server} "sudo dnf update; sudo dnf install git -y; sudo dnf install -y httpd; sudo systemctl start httpd; sudo git clone https://github.com/YOUR_REPOSITORY /var/www/html"
+                       ssh -T -oStrictHostKeyChecking=no -i "\$TOKENAWS" ec2-user@${server} "sudo dnf update; sudo dnf install git -y; sudo dnf install -y httpd; sudo systemctl start httpd; sudo git clone https://github.com/mickaelayuriko/FinalExam.git /var/www/html"
                        """
                     }
                 }
