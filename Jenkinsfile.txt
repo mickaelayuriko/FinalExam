@@ -4,6 +4,7 @@ environment{
 TOKENAWS = credentials('aws-credentials')
 TEST_RESULT_FILE = 'test_result.txt'
 }
+
     stages{
         stage('Deploy to Testing'){
             steps{
