@@ -1,0 +1,61 @@
+pipeline{
+agent { label 'aws' }
+environment{
+TOKENAWS = credentials('aws-credentials')
+TEST_RESULT_FILE = 'test_result.txt'
+}
+
+    stages{
+        stage('Deploy to Testing'){
+            steps{
+            sh 'ssh -T -oStrictHostKeyChecking=no -i "$TOKENAWS" ec2-user@18.234.83.194 "sudo dnf update; sudo dnf install git -y; sudo dnf install -y httpd; sudo systemctl start httpd; sudo git clone https://github.com/YOUR_REPOSITORY /var/www/html"'
+            script{
+                    try{
+                        //Install Selenium webdriver
+                        sh 'npm install selenium-webdriver'
+                        
+                        //Run the test and capture the output
+                        def output = sh(script: 'node test/test1.js', returnStdout: true).trim()
+
+                        //Debugging printing the output
+                        echo "Test Output: ${output}"
+
+                        //Write the result to a file
+
+                        if(output.contains('Test Success')){
+                            writeFile file: env.TEST_RESULT_FILE, text: 'true'
+                        }else{
+                            writeFile file: env.TEST_RESULT_FILE, text: 'false'
+                        }
+                    }catch (Exception e) {
+                        echo "Test failed: ${e.message}"
+                        writeFile file: env.TEST_RESULT_FILE, text: 'false'
+                    }
+            
+            }
+        }
+
+        stage('Deploy to Staging'){
+            steps{
+            sh 'ssh -T -oStrictHostKeyChecking=no -i "$TOKENAWS" ec2-user@54.167.254.7 "sudo dnf update; sudo dnf install git -y; sudo dnf install -y httpd; sudo systemctl start httpd; sudo git clone https://github.com/YOUR_REPOSITORY /var/www/html"'
+            }
+        }
+        
+        stage('Deploy to Production_1 and Production_2'){
+            steps{
+            script {
+                    def servers = [
+                        '3.84.184.162',  // IP for Production_1
+                        '54.166.105.196' // IP for Production_2
+                    ]
+                    for (server in servers) {
+                       sh """
+                       ssh -T -oStrictHostKeyChecking=no -i "\$TOKENAWS" ec2-user@${server} "sudo dnf update; sudo dnf install git -y; sudo dnf install -y httpd; sudo systemctl start httpd; sudo git clone https://github.com/YOUR_REPOSITORY /var/www/html"
+                       """
+                    }
+                }
+            }
+        }
+
+    }
+}
