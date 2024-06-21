@@ -1,7 +1,7 @@
 pipeline{
 agent { label 'aws' }
 environment{
-TOKENAWS = credentials('aws-credentials')
+TOKENAWS = credentials('aws_credentials')
 TEST_RESULT_FILE = 'test_result.txt'
 }
 
